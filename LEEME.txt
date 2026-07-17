@@ -1,0 +1,53 @@
+CÓMO ACTIVAR EL ENVÍO DE CORREOS CON BREVO — USANDO CLOUDFLARE PAGES
+======================================================================
+
+Esta es la misma función que ya construimos para Netlify, adaptada para Cloudflare Pages
+(gratis, sin los límites de crédito que tuvo Netlify). No necesitas tocar tu portal de
+padres ni el escáner — esos se quedan tranquilos donde ya están, en Netlify.
+
+PASO 1 — Ya tienes tu cuenta de Brevo y tu clave API
+-------------------------------------------------------
+Si ya seguiste los pasos anteriores, ya tienes:
+- Tu correo remitente verificado en Brevo.
+- Tu clave API (la que copiaste y guardaste).
+
+Si no, entra a brevo.com, verifica tu correo remitente, y genera la clave en
+Configuración → Claves API → API v3.
+
+PASO 2 — Crea tu cuenta en Cloudflare (gratis, sin tarjeta)
+----------------------------------------------------------------
+1. Entra a https://dash.cloudflare.com/sign-up
+2. Crea tu cuenta con tu correo (no pide tarjeta para el plan gratis).
+
+PASO 3 — Sube esta carpeta a Cloudflare Pages
+--------------------------------------------------
+1. Dentro de Cloudflare, busca en el menú lateral "Workers & Pages".
+2. Botón "Create" → pestaña "Pages" → "Upload assets" (subir archivos).
+3. Ponle un nombre a tu proyecto (ej: "fundharte-correo").
+4. Arrastra esta MISMA carpeta completa (con la carpeta "functions" adentro) al recuadro.
+5. Cuando termine, Cloudflare te da una URL como:
+   https://fundharte-correo.pages.dev
+
+PASO 4 — Configura las variables secretas en Cloudflare
+-------------------------------------------------------------
+1. Dentro de tu proyecto en Cloudflare Pages: Settings → Environment variables.
+2. Agrega estas (para el ambiente "Production"):
+   - BREVO_API_KEY        → tu clave API de Brevo
+   - BREVO_SENDER_EMAIL   → el correo que verificaste en Brevo
+   - BREVO_SENDER_NAME    → (opcional) el nombre que verá el comprador
+3. Guarda, y vuelve a desplegar el proyecto (Cloudflare a veces te pide "Retry deployment"
+   o "Redeploy" para que tome las variables nuevas — es normal, solo dale clic).
+
+PASO 5 — Conecta la tiquetera
+--------------------------------
+1. Abre tu tiquetera (tiquetera_estandar.html) → Ajustes → Correo (Brevo).
+2. Pega la URL de tu función, agregando al final "/send-email", ej:
+   https://fundharte-correo.pages.dev/send-email
+
+   (Nota: en Cloudflare la dirección es más corta que en Netlify — no lleva
+   "/.netlify/functions/", solo "/send-email")
+
+3. Guarda, y prueba con el botón "Enviar correo de prueba".
+
+Listo — desde ese momento, todos los correos de tiquetes salen por Brevo, sin haber
+tocado para nada tu portal de padres ni el escáner que ya funcionan en Netlify.
