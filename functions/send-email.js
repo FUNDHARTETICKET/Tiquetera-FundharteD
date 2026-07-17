@@ -36,7 +36,7 @@ export async function onRequestPost(context) {
     );
   }
 
-  const { to_email, subject, message, reply_to, from_name, from_email, attachment_base64, attachment_name } = datos;
+  const { to_email, subject, message, reply_to, from_name, from_email, attachment_base64, attachment_name, attachments } = datos;
 
   if (!to_email || !subject || !message) {
     return new Response(
@@ -63,13 +63,18 @@ export async function onRequestPost(context) {
     htmlContent: message,
   };
   if (reply_to) payload.replyTo = { email: reply_to };
-  // Adjunto opcional (por ejemplo, el tiquete en PDF o JPG) — Brevo lo recibe en base64,
-  // sin el prefijo "data:...;base64," que traen los data URLs generados en el navegador.
-  if (attachment_base64 && attachment_name) {
-    const contenidoLimpio = attachment_base64.includes(',')
-      ? attachment_base64.split(',')[1]
-      : attachment_base64;
-    payload.attachment = [{ content: contenidoLimpio, name: attachment_name }];
+
+  function limpiarBase64(b64) {
+    return b64 && b64.includes(',') ? b64.split(',')[1] : b64;
+  }
+  // Adjuntos: acepta una lista completa (varios tiquetes, JPG y PDF juntos), o el formato
+  // anterior de un solo adjunto, para no romper integraciones ya desplegadas.
+  if (Array.isArray(attachments) && attachments.length) {
+    payload.attachment = attachments
+      .filter((a) => a && a.content && a.name)
+      .map((a) => ({ content: limpiarBase64(a.content), name: a.name }));
+  } else if (attachment_base64 && attachment_name) {
+    payload.attachment = [{ content: limpiarBase64(attachment_base64), name: attachment_name }];
   }
 
   try {
