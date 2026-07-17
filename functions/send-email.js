@@ -38,6 +38,13 @@ export async function onRequestPost(context) {
 
   const { to_email, subject, message, reply_to, from_name, from_email, attachment_base64, attachment_name, attachments } = datos;
 
+  // Registro de diagnóstico: esto se ve en "Logs" dentro de tu proyecto de Cloudflare Pages,
+  // para confirmar exactamente qué llegó desde el navegador antes de tocar nada más.
+  console.log('[send-email] attachments recibidos:', Array.isArray(attachments) ? attachments.length : 'ninguno (no es un array)');
+  if (Array.isArray(attachments)) {
+    attachments.forEach((a, i) => console.log(`[send-email] adjunto ${i}: nombre=${a && a.name}, largo_content=${a && a.content ? a.content.length : 0}`));
+  }
+
   if (!to_email || !subject || !message) {
     return new Response(
       JSON.stringify({ error: 'Faltan datos: se necesita to_email, subject y message' }),
@@ -76,6 +83,7 @@ export async function onRequestPost(context) {
   } else if (attachment_base64 && attachment_name) {
     payload.attachment = [{ content: limpiarBase64(attachment_base64), name: attachment_name }];
   }
+  console.log('[send-email] attachments que se van a mandar a Brevo:', payload.attachment ? payload.attachment.length : 0);
 
   try {
     const res = await fetch('https://api.brevo.com/v3/smtp/email', {
@@ -89,13 +97,23 @@ export async function onRequestPost(context) {
     });
 
     const textoResp = await res.text();
+    // Info de diagnóstico: cuántos adjuntos llegaron a esta función y cuántos se mandaron a
+    // Brevo — así se puede ver todo desde la consola del navegador, sin tener que buscar
+    // los logs de Cloudflare.
+    const diagnostico = {
+      adjuntosRecibidos: Array.isArray(attachments) ? attachments.length : 0,
+      adjuntosEnviadosABrevo: payload.attachment ? payload.attachment.length : 0,
+    };
     if (!res.ok) {
       return new Response(
-        JSON.stringify({ error: `Brevo rechazó el envío (${res.status}): ${textoResp || 'sin detalle'}` }),
+        JSON.stringify({ error: `Brevo rechazó el envío (${res.status}): ${textoResp || 'sin detalle'}`, diagnostico }),
         { status: res.status, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } }
       );
     }
-    return new Response(textoResp || '{}', { status: 200, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } });
+    let respuestaFinal = {};
+    try { respuestaFinal = JSON.parse(textoResp || '{}'); } catch (e) {}
+    respuestaFinal.diagnostico = diagnostico;
+    return new Response(JSON.stringify(respuestaFinal), { status: 200, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } });
   } catch (e) {
     return new Response(
       JSON.stringify({ error: 'Error de red al llamar a Brevo: ' + e.message }),
