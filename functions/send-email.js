@@ -3,6 +3,10 @@
 // vea el código de la página pueda robarla. El portal de compra y la tiquetera solo le hablan
 // a esta función (que sí pueden ver), y esta función es la única que le habla a Brevo.
 
+// Marca de versión — sirve para confirmar con certeza si Cloudflare ya tomó esta
+// actualización o si todavía está corriendo una versión anterior de este archivo.
+const VERSION_FUNCION = 'v3-multi-adjuntos';
+
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'Content-Type',
@@ -101,6 +105,7 @@ export async function onRequestPost(context) {
     // Brevo — así se puede ver todo desde la consola del navegador, sin tener que buscar
     // los logs de Cloudflare.
     const diagnostico = {
+      version: VERSION_FUNCION,
       adjuntosRecibidos: Array.isArray(attachments) ? attachments.length : 0,
       adjuntosEnviadosABrevo: payload.attachment ? payload.attachment.length : 0,
     };
